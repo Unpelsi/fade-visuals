@@ -43,7 +43,8 @@ export default async function handler(req, res) {
 
   if (
     pathname.includes('/artifact') || 
-    pathname.includes('/jar') || 
+    pathname.includes('/jar') ||
+    pathname.includes('/fade-jar') ||
     pathname.includes('/jre') || 
     pathname.includes('/assets')) {
     return artifactHandler(req, res);
