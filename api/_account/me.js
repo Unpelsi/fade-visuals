@@ -14,7 +14,7 @@ import { methodNotAllowed, serverError, unauthorized, extractBearerToken } from 
 
 const DATABASE_URL = String(
   process.env.FIREBASE_DATABASE_URL ||
-  'https://gen-lang-client-0640974949-default-rtdb.firebaseio.com'
+  'https://fade-client-default-rtdb.firebaseio.com'
 ).replace(/\/$/, '');
 
 /**

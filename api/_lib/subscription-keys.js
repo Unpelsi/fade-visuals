@@ -10,7 +10,7 @@ const ADMIN_LOOKUP_TIMEOUT_MS = Number(process.env.ADMIN_LOOKUP_TIMEOUT_MS || 50
 const ADMIN_WRITE_TIMEOUT_MS = Number(process.env.ADMIN_WRITE_TIMEOUT_MS || 8000);
 const DATABASE_URL = String(
   process.env.FIREBASE_DATABASE_URL ||
-  'https://gen-lang-client-0640974949-default-rtdb.firebaseio.com'
+  'https://fade-client-default-rtdb.firebaseio.com'
 ).replace(/\/$/, '');
 
 function nowMs() {
