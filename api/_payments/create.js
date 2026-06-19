@@ -1,6 +1,5 @@
-import { push, ref, set, update } from 'firebase/database';
-import { db } from '../_lib/firebase.js';
 import { verifyRequestAuth } from '../_lib/auth.js';
+import { adminDb } from '../_lib/firebase-admin.js';
 import { badRequest, getBody, getRequestBaseUrl, methodNotAllowed, serverError, tooManyRequests, unauthorized } from '../_lib/http.js';
 import { checkRateLimit, getClientIp } from '../_lib/rate-limit.js';
 import { getTierPriceRub, createYooKassaPayment, normalizeYooKassaStatus } from '../_lib/yookassa.js';
@@ -64,14 +63,14 @@ export default async function handler(req, res) {
     }
 
     const { tier, amountRub } = getTierPriceRub(tierRaw);
-    const paymentRef = push(ref(db, 'payments'));
+    const paymentRef = adminDb.ref('payments').push();
     const paymentId = paymentRef.key;
     if (!paymentId) {
       throw new Error('Failed to generate payment id.');
     }
 
     const createdAt = Date.now();
-    await set(paymentRef, {
+    await paymentRef.set({
       userId: auth.uid,
       tier,
       amount: amountRub,
@@ -82,7 +81,7 @@ export default async function handler(req, res) {
       createdAt,
       updatedAt: createdAt
     });
-    await update(ref(db, `entitlements/${auth.uid}`), {
+    await adminDb.ref(`entitlements/${auth.uid}`).update({
       state: 'pending',
       source: 'payment_create',
       updatedAt: createdAt
@@ -106,7 +105,7 @@ export default async function handler(req, res) {
     });
 
     if (!provider.ok) {
-      await update(paymentRef, {
+      await paymentRef.update({
         status: 'failed',
         providerError: provider.message || 'provider_create_failed',
         updatedAt: Date.now()
@@ -125,7 +124,7 @@ export default async function handler(req, res) {
     const providerPayment = provider.payment || {};
     const confirmationUrl = providerPayment?.confirmation?.confirmation_url || '';
     if (!confirmationUrl) {
-      await update(paymentRef, {
+      await paymentRef.update({
         status: 'failed',
         providerError: 'missing_confirmation_url',
         updatedAt: Date.now()
@@ -133,7 +132,7 @@ export default async function handler(req, res) {
       return serverError(res, 'Payment provider did not return confirmation URL.');
     }
 
-    await update(paymentRef, {
+    await paymentRef.update({
       providerTxId: providerPayment.id || null,
       providerStatus: String(providerPayment.status || 'pending'),
       status: normalizeYooKassaStatus(providerPayment.status),

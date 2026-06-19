@@ -1,6 +1,5 @@
-import { get, ref } from 'firebase/database';
-import { db } from '../_lib/firebase.js';
 import { badRequest, getBody, methodNotAllowed, serverError } from '../_lib/http.js';
+import { adminDb } from '../_lib/firebase-admin.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const paymentSnapshot = await get(ref(db, `payments/${paymentId}`));
+    const paymentSnapshot = await adminDb.ref(`payments/${paymentId}`).get();
     if (!paymentSnapshot.exists()) {
       return res.status(404).json({ ok: false, error: 'Payment not found.' });
     }

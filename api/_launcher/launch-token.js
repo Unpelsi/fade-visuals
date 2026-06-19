@@ -1,5 +1,4 @@
-import { get, ref } from 'firebase/database';
-import { db } from '../_lib/firebase.js';
+import { adminDb } from '../_lib/firebase-admin.js';
 import {
   badRequest,
   methodNotAllowed,
@@ -112,7 +111,7 @@ export default async function handler(req, res) {
       return forbidden(res, 'Access token session mismatch.');
     }
 
-    const sessionSnapshot = await get(ref(db, `sessions/${sessionHash}`));
+    const sessionSnapshot = await adminDb.ref(`sessions/${sessionHash}`).get();
     const session = sessionSnapshot.exists() ? (sessionSnapshot.val() || {}) : {};
     if (String(session.deviceId || '') && String(decoded.deviceId || '') !== String(session.deviceId || '')) {
       await writeAuditLog('launcher_launch_token_denied_device', {
@@ -125,7 +124,7 @@ export default async function handler(req, res) {
       return forbidden(res, 'Access token device mismatch.');
     }
 
-    const userSnapshot = await get(ref(db, `users/${verification.uid}`));
+    const userSnapshot = await adminDb.ref(`users/${verification.uid}`).get();
     const user = userSnapshot.exists() ? (userSnapshot.val() || {}) : null;
     if (!user) {
       await writeAuditLog('launcher_launch_token_denied_user_missing', {

@@ -1,7 +1,6 @@
 import fs from 'fs';
-import { get, ref } from 'firebase/database';
-import { db } from './firebase.js';
 import { readArtifactMeta } from './artifacts.js';
+import { adminDb } from './firebase-admin.js';
 import { extractBearerToken, forbidden, unauthorized } from './http.js';
 import { getEntitlement, getUserByUid, resolveEntitlementState, writeAuditLog } from './license.js';
 import { verifyAccessToken } from './tokens.js';
@@ -44,7 +43,7 @@ export async function verifyLauncherArtifactAccess(req) {
     return { ok: false, status: 401, message: 'Access token was revoked.' };
   }
 
-  const sessionSnapshot = await get(ref(db, `sessions/${sessionId}`));
+  const sessionSnapshot = await adminDb.ref(`sessions/${sessionId}`).get();
   if (!sessionSnapshot.exists()) {
     return { ok: false, status: 401, message: 'Session not found.' };
   }

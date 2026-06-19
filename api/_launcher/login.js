@@ -1,5 +1,4 @@
-import { ref, update } from 'firebase/database';
-import { db } from '../_lib/firebase.js';
+import { adminDb } from '../_lib/firebase-admin.js';
 import {
   authenticateUsernamePassword,
   signUpUsernamePassword,
@@ -100,7 +99,7 @@ export default async function handler(req, res) {
 
     const hwidDecision = evaluateHwidPolicy(user, hwidHash);
     if (Object.keys(hwidDecision.patch).length > 0) {
-      await update(ref(db, `users/${auth.uid}`), hwidDecision.patch);
+      await adminDb.ref(`users/${auth.uid}`).update(hwidDecision.patch);
     }
 
     if (!hwidDecision.allowed) {
@@ -115,7 +114,7 @@ export default async function handler(req, res) {
     }
 
     const session = await createSession(auth.uid, hwidHash, launcherVersion, deviceId, deviceFingerprintHash);
-    await update(ref(db, `users/${auth.uid}`), {
+    await adminDb.ref(`users/${auth.uid}`).update({
       lastLoginAt: Date.now(),
       mismatchStrikes: 0,
       cooldownUntil: 0

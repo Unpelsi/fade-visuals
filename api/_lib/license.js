@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { get, push, ref, remove, runTransaction, set, update } from 'firebase/database';
-import { db, webApiKey } from './firebase.js';
+import { webApiKey } from './firebase.js';
+import { adminDb } from './firebase-admin.js';
 
 const SESSION_TTL_MS = Number(process.env.SESSION_TTL_MS || 24 * 60 * 60 * 1000);
 const HWID_RESET_WINDOW_MS = Number(process.env.HWID_RESET_WINDOW_MS || 30 * 24 * 60 * 60 * 1000);
@@ -84,8 +84,8 @@ export function normalizeUidShort(rawUidShort) {
 }
 
 async function allocateSequentialUidShort() {
-  const counterRef = ref(db, 'meta/counters/userUidShort');
-  const result = await runTransaction(counterRef, (currentValue) => {
+  const counterRef = adminDb.ref('meta/counters/userUidShort');
+  const result = await counterRef.transaction((currentValue) => {
     const currentNumber = Number(currentValue || 0);
     return currentNumber + 1;
   });
@@ -233,7 +233,7 @@ export async function authenticateUsernamePassword(username, password) {
 }
 
 export async function getUserByUid(uid) {
-  const userSnapshot = await get(ref(db, `users/${uid}`));
+  const userSnapshot = await adminDb.ref(`users/${uid}`).get();
   if (!userSnapshot.exists()) {
     return null;
   }
@@ -242,9 +242,9 @@ export async function getUserByUid(uid) {
 }
 
 export async function ensureUserRecord(uid, email, username = '') {
-  const userRef = ref(db, `users/${uid}`);
-  const entitlementRef = ref(db, `entitlements/${uid}`);
-  const snapshot = await get(userRef);
+  const userRef = adminDb.ref(`users/${uid}`);
+  const entitlementRef = adminDb.ref(`entitlements/${uid}`);
+  const snapshot = await userRef.get();
   const normalizedUsername = normalizeUsername(username || emailToUsername(email));
 
   if (!snapshot.exists()) {
@@ -266,8 +266,8 @@ export async function ensureUserRecord(uid, email, username = '') {
       lastLoginAt: null
     };
 
-    await set(userRef, freshUser);
-    await set(entitlementRef, {
+    await userRef.set(freshUser);
+    await entitlementRef.set({
       plan: 'none',
       state: 'pending',
       expiresAt: null,
@@ -308,12 +308,12 @@ export async function ensureUserRecord(uid, email, username = '') {
   }
 
   if (Object.keys(patch).length > 0) {
-    await update(userRef, patch);
+    await userRef.update(patch);
   }
 
-  const entitlementSnapshot = await get(entitlementRef);
+  const entitlementSnapshot = await entitlementRef.get();
   if (!entitlementSnapshot.exists()) {
-    await set(entitlementRef, {
+    await entitlementRef.set({
       plan: resolveSubscriptionRaw(existing),
       state: isSubscriptionActive(existing) ? 'active' : 'pending',
       expiresAt: resolveExpiresAt(existing) || null,
@@ -326,7 +326,7 @@ export async function ensureUserRecord(uid, email, username = '') {
 }
 
 export async function getEntitlement(uid) {
-  const snapshot = await get(ref(db, `entitlements/${uid}`));
+  const snapshot = await adminDb.ref(`entitlements/${uid}`).get();
   if (!snapshot.exists()) {
     return null;
   }
@@ -420,8 +420,8 @@ export async function consumeManualHwidReset(uid, now = nowMs()) {
     return { ok: false, message: 'User id is required.' };
   }
 
-  const userRef = ref(db, `users/${targetUid}`);
-  const snapshot = await get(userRef);
+  const userRef = adminDb.ref(`users/${targetUid}`);
+  const snapshot = await userRef.get();
   if (!snapshot.exists()) {
     return { ok: false, message: 'User not found.' };
   }
@@ -444,7 +444,7 @@ export async function consumeManualHwidReset(uid, now = nowMs()) {
   }
 
   resetCredits -= 1;
-  await update(userRef, {
+  await userRef.update({
     hwidHash: null,
     resetCredits,
     resetWindowStart,
@@ -469,7 +469,7 @@ export async function createSession(uid, hwidHash, launcherVersion = 'unknown', 
   const sessionToken = crypto.randomBytes(32).toString('base64url');
   const sessionTokenHash = hashToken(sessionToken);
 
-  await set(ref(db, `sessions/${sessionTokenHash}`), {
+  await adminDb.ref(`sessions/${sessionTokenHash}`).set({
     uid,
     deviceId: String(deviceId || '').trim(),
     deviceFingerprintHash: String(deviceFingerprintHash || '').trim(),
@@ -493,7 +493,7 @@ export async function revokeAllSessionsForUid(uid) {
     return 0;
   }
 
-  const sessionsSnapshot = await get(ref(db, 'sessions'));
+  const sessionsSnapshot = await adminDb.ref('sessions').get();
   if (!sessionsSnapshot.exists()) {
     return 0;
   }
@@ -502,7 +502,7 @@ export async function revokeAllSessionsForUid(uid) {
   sessionsSnapshot.forEach((child) => {
     const session = child.val() || {};
     if (String(session.uid || '') === targetUid) {
-      removals.push(remove(ref(db, `sessions/${child.key}`)));
+      removals.push(adminDb.ref(`sessions/${child.key}`).remove());
     }
   });
 
@@ -525,7 +525,7 @@ export async function verifySessionToken(sessionToken, hwidHash, options = {}) {
   const now = nowMs();
   const touchSession = options.touchSession !== false;
 
-  const sessionSnapshot = await get(ref(db, `sessions/${tokenHash}`));
+  const sessionSnapshot = await adminDb.ref(`sessions/${tokenHash}`).get();
   if (!sessionSnapshot.exists()) {
     return { valid: false, message: 'Session not found.' };
   }
@@ -539,7 +539,7 @@ export async function verifySessionToken(sessionToken, hwidHash, options = {}) {
     return { valid: false, message: 'HWID mismatch.' };
   }
 
-  const revocationsSnapshot = await get(ref(db, 'revocations/global'));
+  const revocationsSnapshot = await adminDb.ref('revocations/global').get();
   if (revocationsSnapshot.exists()) {
     const revocations = revocationsSnapshot.val() || {};
     const minTokenIat = toNumber(revocations.minTokenIat, 0);
@@ -581,11 +581,11 @@ export async function verifySessionToken(sessionToken, hwidHash, options = {}) {
   }
 
   if (Object.keys(patch).length > 0) {
-    await update(ref(db, `users/${session.uid}`), patch);
+    await adminDb.ref(`users/${session.uid}`).update(patch);
   }
 
   if (touchSession) {
-    await update(ref(db, `sessions/${tokenHash}`), { lastSeenAt: now });
+    await adminDb.ref(`sessions/${tokenHash}`).update({ lastSeenAt: now });
   }
 
   const uidShort = patch.uidShort || normalizedExistingUidShort;
@@ -604,9 +604,9 @@ export async function verifySessionToken(sessionToken, hwidHash, options = {}) {
 export async function writeAuditLog(eventType, payload = {}) {
   try {
     const dayKey = new Date().toISOString().slice(0, 10);
-    const auditRoot = ref(db, `audit/${dayKey}`);
-    const eventRef = push(auditRoot);
-    await set(eventRef, {
+    const auditRoot = adminDb.ref(`audit/${dayKey}`);
+    const eventRef = auditRoot.push();
+    await eventRef.set({
       eventType,
       at: nowMs(),
       ...payload
@@ -637,9 +637,9 @@ export function normalizeTier(rawTier) {
 
 export async function activateSubscriptionFromPayment(userId, tierRaw) {
   const tier = normalizeTier(tierRaw);
-  const userRef = ref(db, `users/${userId}`);
-  const entitlementRef = ref(db, `entitlements/${userId}`);
-  const userSnapshot = await get(userRef);
+  const userRef = adminDb.ref(`users/${userId}`);
+  const entitlementRef = adminDb.ref(`entitlements/${userId}`);
+  const userSnapshot = await userRef.get();
 
   if (!userSnapshot.exists()) {
     throw new Error('User for payment not found.');
@@ -650,12 +650,12 @@ export async function activateSubscriptionFromPayment(userId, tierRaw) {
 
   if (tier === 'hwid_reset') {
     const currentCredits = toNumber(user.resetCredits, 0);
-    await update(userRef, {
+    await userRef.update({
       resetCredits: currentCredits + 1,
       paidResetCredits: toNumber(user.paidResetCredits, 0) + 1,
       lastPaidResetAt: now
     });
-    await update(entitlementRef, {
+    await entitlementRef.update({
       updatedAt: now
     });
     return { appliedTier: tier, subscription: resolveSubscriptionRaw(user), subscriptionExpiresAt: resolveExpiresAt(user) || null };
@@ -666,12 +666,12 @@ export async function activateSubscriptionFromPayment(userId, tierRaw) {
     const startFrom = Math.max(now, currentExpires);
     const newExpiresAt = startFrom + 30 * 24 * 60 * 60 * 1000;
 
-    await update(userRef, {
+    await userRef.update({
       subscription: '1_month',
       subscriptionExpiresAt: newExpiresAt,
       lastPaymentAt: now
     });
-    await set(entitlementRef, {
+    await entitlementRef.set({
       plan: '1_month',
       state: 'active',
       expiresAt: newExpiresAt,
@@ -683,12 +683,12 @@ export async function activateSubscriptionFromPayment(userId, tierRaw) {
   }
 
   if (tier === 'lifetime' || tier === 'beta') {
-    await update(userRef, {
+    await userRef.update({
       subscription: tier,
       subscriptionExpiresAt: null,
       lastPaymentAt: now
     });
-    await set(entitlementRef, {
+    await entitlementRef.set({
       plan: tier,
       state: 'active',
       expiresAt: null,
@@ -708,7 +708,7 @@ export async function findUserByHwidHash(hwidHash) {
     return null;
   }
 
-  const usersSnapshot = await get(ref(db, 'users'));
+  const usersSnapshot = await adminDb.ref('users').get();
   if (!usersSnapshot.exists()) {
     return null;
   }

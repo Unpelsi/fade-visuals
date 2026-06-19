@@ -1,7 +1,6 @@
 import fs from 'fs';
-import { get, ref, set } from 'firebase/database';
-import { db } from './_lib/firebase.js';
 import { readArtifactMeta } from './_lib/artifacts.js';
+import { adminDb } from './_lib/firebase-admin.js';
 import { verifyDownloadToken } from './_lib/download-links.js';
 import { createHash } from 'crypto';
 import { getEntitlement, resolveEntitlementState, writeAuditLog } from './_lib/license.js';
@@ -65,7 +64,7 @@ export default async function handler(req, res) {
       }
 */
 
-      const userSnapshot = await get(ref(db, `users/${userId}`));
+      const userSnapshot = await adminDb.ref(`users/${userId}`).get();
       const user = userSnapshot.exists() ? (userSnapshot.val() || {}) : {};
       if (user.banned === true) {
         return res.status(403).json({ ok: false, error: 'Account is banned.' });

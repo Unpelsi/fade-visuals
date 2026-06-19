@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { get, ref, remove, set } from 'firebase/database';
-import { db } from './firebase.js';
+import { adminDb } from './firebase-admin.js';
 
 const ACCESS_TTL_SECONDS = Number(process.env.ACCESS_TOKEN_TTL_SECONDS || 7 * 24 * 60 * 60); // 7 дней
 const REFRESH_TTL_SECONDS = Number(process.env.REFRESH_TOKEN_TTL_SECONDS || 90 * 24 * 60 * 60); // 90 дней
@@ -89,7 +88,7 @@ export async function createRefreshToken({ uid, sid, deviceId = '', tokenVersion
   });
 
   const hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
-  await set(ref(db, `refresh_tokens/${hash}`), {
+  await adminDb.ref(`refresh_tokens/${hash}`).set({
     uid,
     sid: String(sid || ''),
     deviceId: String(deviceId || ''),
@@ -182,8 +181,8 @@ export async function rotateRefreshToken(refreshToken) {
 
   const decoded = verify.decoded || {};
   const hash = crypto.createHash('sha256').update(String(refreshToken || ''), 'utf8').digest('hex');
-  const tokenRef = ref(db, `refresh_tokens/${hash}`);
-  const tokenSnapshot = await get(tokenRef);
+  const tokenRef = adminDb.ref(`refresh_tokens/${hash}`);
+  const tokenSnapshot = await tokenRef.get();
   if (!tokenSnapshot.exists()) {
     return { ok: false, message: 'Refresh token not found.' };
   }
@@ -196,7 +195,7 @@ export async function rotateRefreshToken(refreshToken) {
     return { ok: false, message: 'Refresh token expired.' };
   }
 
-  await set(tokenRef, {
+  await tokenRef.set({
     ...tokenData,
     used: true,
     rotatedAt: nowMs()
@@ -240,7 +239,7 @@ export async function revokeRefreshTokensForSession(sid) {
     return 0;
   }
 
-  const snapshot = await get(ref(db, 'refresh_tokens'));
+  const snapshot = await adminDb.ref('refresh_tokens').get();
   if (!snapshot.exists()) {
     return 0;
   }
@@ -249,7 +248,7 @@ export async function revokeRefreshTokensForSession(sid) {
   snapshot.forEach((child) => {
     const data = child.val() || {};
     if (String(data.sid || '') === target) {
-      removals.push(remove(ref(db, `refresh_tokens/${child.key}`)));
+      removals.push(adminDb.ref(`refresh_tokens/${child.key}`).remove());
     }
   });
 

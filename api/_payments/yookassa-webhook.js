@@ -1,6 +1,5 @@
-import { get, ref, update } from 'firebase/database';
-import { db } from '../_lib/firebase.js';
 import { activateSubscriptionFromPayment, writeAuditLog } from '../_lib/license.js';
+import { adminDb } from '../_lib/firebase-admin.js';
 import { badRequest, forbidden, getBody, methodNotAllowed, serverError } from '../_lib/http.js';
 import { normalizeYooKassaStatus } from '../_lib/yookassa.js';
 import crypto from 'crypto';
@@ -24,8 +23,8 @@ function isDuplicateCompleted(payment, providerTxId) {
 
 async function findPaymentRecord(paymentIdFromMeta, providerTxId) {
   if (paymentIdFromMeta) {
-    const paymentRef = ref(db, `payments/${paymentIdFromMeta}`);
-    const paymentSnapshot = await get(paymentRef);
+    const paymentRef = adminDb.ref(`payments/${paymentIdFromMeta}`);
+    const paymentSnapshot = await paymentRef.get();
     if (paymentSnapshot.exists()) {
       return {
         paymentId: paymentIdFromMeta,
@@ -35,7 +34,7 @@ async function findPaymentRecord(paymentIdFromMeta, providerTxId) {
     }
   }
 
-  const paymentsSnapshot = await get(ref(db, 'payments'));
+  const paymentsSnapshot = await adminDb.ref('payments').get();
   if (!paymentsSnapshot.exists()) {
     return null;
   }
@@ -50,7 +49,7 @@ async function findPaymentRecord(paymentIdFromMeta, providerTxId) {
     if (providerTxId && String(data.providerTxId || '') === String(providerTxId)) {
       found = {
         paymentId: child.key,
-        paymentRef: ref(db, `payments/${child.key}`),
+        paymentRef: adminDb.ref(`payments/${child.key}`),
         payment: data
       };
     }
@@ -118,7 +117,7 @@ export default async function handler(req, res) {
     }
 
     const now = Date.now();
-    await update(paymentRef, {
+    await paymentRef.update({
       providerTxId: providerTxId || payment.providerTxId || null,
       providerStatus: providerStatusRaw || null,
       status: providerStatus || payment.status || 'pending',
@@ -139,7 +138,7 @@ export default async function handler(req, res) {
       }
 
       const applied = await activateSubscriptionFromPayment(userId, tier);
-      await update(paymentRef, {
+      await paymentRef.update({
         status: 'completed',
         processedAt: now,
         updatedAt: now
@@ -158,7 +157,7 @@ export default async function handler(req, res) {
     if (providerStatus === 'failed') {
       const userId = String(metadata.userId || payment.userId || '').trim();
       if (userId) {
-        await update(ref(db, `entitlements/${userId}`), {
+        await adminDb.ref(`entitlements/${userId}`).update({
           state: 'revoked',
           source: 'payment_refund_or_cancel',
           updatedAt: now
