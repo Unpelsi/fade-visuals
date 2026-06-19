@@ -3,13 +3,13 @@ import { getAuth, User } from 'firebase/auth';
 import { getDatabase, get, ref, serverTimestamp, set } from 'firebase/database';
 
 const defaultFirebaseConfig = {
-  apiKey: 'AIzaSyAaz1Sat0zPHZdeUESxkV8lNEtUJE7EEPA',
-  authDomain: 'gen-lang-client-0640974949.firebaseapp.com',
-  projectId: 'gen-lang-client-0640974949',
-  storageBucket: 'gen-lang-client-0640974949.firebasestorage.app',
-  messagingSenderId: '90325346449',
-  appId: '1:90325346449:web:86b3b2f10f9bc94155f730',
-  databaseURL: 'https://gen-lang-client-0640974949-default-rtdb.firebaseio.com'
+  apiKey: 'AIzaSyCD61hKVJi16c0NVQTV1ZKOsFjjeXdgzXQ',
+  authDomain: 'fade-client.firebaseapp.com',
+  projectId: 'fade-client',
+  storageBucket: 'fade-client.firebasestorage.app',
+  messagingSenderId: '838857350681',
+  appId: '1:838857350681:web:125f4f7bab426ab8f49488',
+  databaseURL: 'https://fade-client-default-rtdb.firebaseio.com'
 };
 
 const firebaseConfig = {

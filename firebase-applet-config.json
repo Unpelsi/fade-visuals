@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0640974949",
-  "appId": "1:90325346449:web:86b3b2f10f9bc94155f730",
-  "apiKey": "AIzaSyAaz1Sat0zPHZdeUESxkV8lNEtUJE7EEPA",
-  "authDomain": "gen-lang-client-0640974949.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-4ed7f4b0-de10-4fc8-bc51-9ad2449fa3bb",
-  "storageBucket": "gen-lang-client-0640974949.firebasestorage.app",
-  "messagingSenderId": "90325346449",
-  "measurementId": ""
+  "projectId": "fade-client",
+  "appId": "1:838857350681:web:125f4f7bab426ab8f49488",
+  "apiKey": "AIzaSyCD61hKVJi16c0NVQTV1ZKOsFjjeXdgzXQ",
+  "authDomain": "fade-client.firebaseapp.com",
+  "firestoreDatabaseId": "",
+  "storageBucket": "fade-client.firebasestorage.app",
+  "messagingSenderId": "838857350681",
+  "measurementId": "G-F87EQ8J051"
 }

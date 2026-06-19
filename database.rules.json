@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid && (!data.exists() || data.child('role').val() === 'user')",
+        ".validate": "newData.hasChildren(['email', 'username', 'role', 'createdAt']) && newData.child('role').val() === 'user'"
+      }
+    },
+    "entitlements": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": false
+      }
+    },
+    "sessions": {
+      ".read": false,
+      ".write": false
+    },
+    "refresh_tokens": {
+      ".read": false,
+      ".write": false
+    },
+    "audit_log": {
+      ".read": false,
+      ".write": false
+    },
+    "subscription_keys": {
+      ".read": false,
+      ".write": false
+    },
+    "used_download_tokens": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

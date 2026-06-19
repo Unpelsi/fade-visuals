@@ -35,7 +35,7 @@ function initAdmin() {
 
   const databaseURL =
     process.env.FIREBASE_DATABASE_URL ||
-    'https://gen-lang-client-0640974949-default-rtdb.firebaseio.com';
+    'https://fade-client-default-rtdb.firebaseio.com';
 
   const credsJson = String(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || '').trim();
   if (credsJson) {

@@ -312,6 +312,30 @@ function assetsConfig() {
   };
 }
 
+function fadeClientConfig() {
+  const absolutePath = toAbsolutePath(
+    getArtifactSetting(['FADE_ARTIFACT_PATH'], 'artifacts/Fade.jar')
+  );
+  const fileName = getArtifactSetting(
+    ['FADE_ARTIFACT_NAME'],
+    path.basename(absolutePath || 'Fade.jar')
+  );
+  const externalUrl = getArtifactSetting(['FADE_ARTIFACT_URL'], '', { allowEmpty: true });
+  return {
+    type: 'fade-client',
+    externalUrl: shouldUseExternalUrl(absolutePath, externalUrl) ? externalUrl : '',
+    absolutePath,
+    fileName,
+    version: getArtifactSetting(['FADE_VERSION'], ''),
+    hash: getArtifactSetting(['FADE_SHA256'], '').toLowerCase(),
+    size: parsePositiveNumber(getArtifactSetting(['FADE_SIZE'], ''), 0),
+    contentType: getArtifactSetting(
+      ['FADE_ARTIFACT_CONTENT_TYPE'],
+      inferContentType(fileName, 'application/java-archive')
+    )
+  };
+}
+
 export function getArtifactConfig(type) {
   const kind = String(type || '').trim().toLowerCase();
   if (kind === 'client') {
@@ -325,6 +349,9 @@ export function getArtifactConfig(type) {
   }
   if (kind === 'assets') {
     return assetsConfig();
+  }
+  if (kind === 'fade-client') {
+    return fadeClientConfig();
   }
 
   throw new Error(`Unsupported artifact type: ${type}`);

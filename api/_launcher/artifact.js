@@ -4,7 +4,8 @@ import { requireLauncherArtifactAccessAndSend } from '../_lib/artifact-delivery.
 const PATH_TO_TYPE = {
   '/jar': 'client',
   '/jre': 'jre',
-  '/assets': 'assets'
+  '/assets': 'assets',
+  '/fade-jar': 'fade-client'
 };
 
 function getPathSuffix(req) {
