@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { get } from 'firebase-admin/database';
 import { adminDb, adminFirestore } from './firebase-admin.js';
 import { normalizeTier, revokeAllSessionsForUid, writeAuditLog } from './license.js';
 
@@ -90,7 +89,7 @@ async function getSubscriptionKeyRecord(keyHash) {
   }
 
   const snapshot = await withTimeout(
-    get(getSubscriptionKeyRef(keyHash)),
+    getSubscriptionKeyRef(keyHash).get(),
     ADMIN_LOOKUP_TIMEOUT_MS,
     'RTDB subscription key lookup timed out.'
   );
