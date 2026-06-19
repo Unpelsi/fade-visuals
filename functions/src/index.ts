@@ -85,7 +85,7 @@ async function handleCreatePayment(req: any, res: any) {
       },
       confirmation: {
         type: 'redirect',
-        return_url: returnUrl || 'https://aura-client-sites.vercel.app/payment/success'
+        return_url: returnUrl || 'https://fade-visuals.vercel.app/payment/success'
       },
       description: selectedPrice.description,
       metadata: {

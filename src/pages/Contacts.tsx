@@ -74,7 +74,7 @@ export default function Contacts() {
                 <strong>Email:</strong> sowingrim@mail.ru
               </p>
               <p className="text-gray-300">
-                <strong>Сайт:</strong> https://aura-client-sites.vercel.app
+                <strong>Сайт:</strong> https://fade-visuals.vercel.app
               </p>
             </div>
           </div>
