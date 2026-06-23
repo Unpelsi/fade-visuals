@@ -172,7 +172,20 @@ export default async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.error('launcher/login error:', error);
-    return serverError(res, 'Internal server error.', error?.message);
-  }
+    console.error('launcher/login error:', error?.message, error?.stack);
+    const detail = error?.message || String(error);
+    const known = {
+      'Failed to allocate sequential uidShort': 'Ошибка создания ID пользователя. Проверьте Firebase RTDB.',
+      'permission denied': 'Нет доступа к базе данных. Настройте GOOGLE_APPLICATION_CREDENTIALS_JSON.',
+      'Network request failed': 'Ошибка сети при запросе к Firebase Auth.',
+      'EMAIL_NOT_FOUND': 'Пользователь не найден.',
+      'EMAIL_EXISTS': 'Этот логин уже занят.',
+      'OPERATION_NOT_ALLOWED': 'Регистрация отключена. Включите Email/Password в Firebase Auth.',
+      'TOO_MANY_ATTEMPTS_TRY_LATER': 'Слишком много попыток. Попробуйте позже.',
+    };
+    let userMsg = 'Внутренняя ошибка сервера.';
+    for (const [key, msg] of Object.entries(known)) {
+      if (detail.toLowerCase().includes(key.toLowerCase())) { userMsg = msg; break; }
+    }
+    return res.status(500).json({ ok: false, error: userMsg, details: detail });
 }
