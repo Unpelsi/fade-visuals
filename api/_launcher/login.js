@@ -182,10 +182,13 @@ export default async function handler(req, res) {
       'EMAIL_EXISTS': 'Этот логин уже занят.',
       'OPERATION_NOT_ALLOWED': 'Регистрация отключена. Включите Email/Password в Firebase Auth.',
       'TOO_MANY_ATTEMPTS_TRY_LATER': 'Слишком много попыток. Попробуйте позже.',
+      'Credential implementation provided to initializeApp() must be a non-empty object': 'Service account JSON повреждён. Перегенерируйте ключ Firebase.',
+      'Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON': 'GOOGLE_APPLICATION_CREDENTIALS_JSON невалидный JSON.',
+      'auth/configuration-not-found': 'Firebase Auth не настроен. Включите Email/Password в Firebase Console.',
     };
-    let userMsg = 'Внутренняя ошибка сервера.';
+    let userMsg = detail;
     for (const [key, msg] of Object.entries(known)) {
       if (detail.toLowerCase().includes(key.toLowerCase())) { userMsg = msg; break; }
     }
-    return res.status(500).json({ ok: false, error: userMsg, details: detail });
+    return res.status(500).json({ ok: false, error: userMsg });
 }
